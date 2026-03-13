@@ -274,11 +274,15 @@ input[type=range]::-webkit-slider-thumb {
 }
 .input-wrap:focus-within { border-color: var(--green-dim); }
 #msg-input {
-  flex: 1; background: transparent; border: none; outline: none;
-  color: var(--text); font-size: 16px; /* 16px prevents iOS zoom on focus */
+  flex: 1; min-width: 0; width: 100%;
+  background: transparent; border: none; outline: none;
+  color: var(--text); font-size: 16px;
   font-family: -apple-system, 'SF Pro Text', sans-serif;
   resize: none; line-height: 1.45; max-height: 120px; min-height: 24px;
   -webkit-appearance: none;
+  writing-mode: horizontal-tb;
+  direction: ltr;
+  overflow-wrap: break-word;
 }
 #msg-input::placeholder { color: var(--muted); }
 .send-btn {
