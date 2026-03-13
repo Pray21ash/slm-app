@@ -316,12 +316,14 @@ input[type=range]::-webkit-slider-thumb {
       <div class="welcome-logo">SLM_</div>
       <div class="welcome-sub">A small language model running entirely<br>on your device. No internet. No server.</div>
       <div class="chip-row">
-        <div class="chip" onclick="quickSend('help')">help</div>
-        <div class="chip" onclick="quickSend('calculate 128 * 8')">calculate 128 × 8</div>
-        <div class="chip" onclick="quickSend('define transformer')">define transformer</div>
-        <div class="chip" onclick="quickSend('what time is it')">what time is it</div>
-        <div class="chip" onclick="quickSend('reverse hello world')">reverse hello world</div>
-        <div class="chip" onclick="quickSend('What is a neural network?')">what is a neural net?</div>
+        <div class="chip" onclick="quickSend('help')">📋 help</div>
+        <div class="chip" onclick="quickSend('calculate sqrt(144)')">📐 calculate</div>
+        <div class="chip" onclick="quickSend('25 C to F')">🔄 convert</div>
+        <div class="chip" onclick="quickSend('prime 17')">🔢 prime 17</div>
+        <div class="chip" onclick="quickSend('define transformer')">📚 define</div>
+        <div class="chip" onclick="quickSend('fibonacci 10')">🌀 fibonacci</div>
+        <div class="chip" onclick="quickSend('joke')">😄 joke</div>
+        <div class="chip" onclick="quickSend('time')">🕐 time</div>
       </div>
     </div>
   </div>
@@ -675,66 +677,219 @@ function decode(ids) {
 //  PLUGINS
 // ══════════════════════════════════════════════════════════
 
+const DEFS = {
+  ai:          'Artificial Intelligence — simulation of human intelligence in machines.',
+  ml:          'Machine Learning — systems that learn from data without explicit programming.',
+  nlp:         'Natural Language Processing — AI that understands and generates human language.',
+  llm:         'Large Language Model — trained on massive corpora to understand and generate text.',
+  slm:         'Small Language Model — compact, efficient, optimised for limited resources.',
+  transformer: 'Neural architecture using self-attention, revolutionising sequence modelling.',
+  attention:   'Mechanism letting every token attend to all others, weighting relevance.',
+  gradient:    'Multi-variable derivative; its negative points toward the loss minimum.',
+  overfitting: 'When a model memorises training data and fails to generalise to new data.',
+  tokenizer:   'Tool that splits text into subword tokens for model processing.',
+  perplexity:  'Model quality metric — lower means better at predicting unseen text.',
+  backprop:    'Backpropagation — computes gradients via chain rule to update weights.',
+  embedding:   'Dense vector representation of a token in high-dimensional space.',
+  softmax:     'Converts raw scores (logits) into probabilities summing to 1.',
+  gelu:        'Gaussian Error Linear Unit — smooth activation function used in GPT.',
+  bpe:         'Byte-Pair Encoding — iteratively merge frequent character pairs to build vocab.',
+  epoch:       'One complete pass through the entire training dataset.',
+  batch:       'Subset of training data processed together in one forward/backward pass.',
+  dropout:     'Regularisation — randomly disables neurons during training to prevent overfitting.',
+  relu:        'Rectified Linear Unit — activation function: output = max(0, x).',
+  loss:        'Measure of how wrong the model\'s predictions are; minimised during training.',
+  inference:   'Running a trained model on new inputs to get predictions.',
+  'fine-tuning':'Further training a pre-trained model on specific data for a specific task.',
+  rag:         'Retrieval-Augmented Generation — combining search results with language generation.',
+  api:         'Application Programming Interface — lets software communicate with other software.',
+  gpu:         'Graphics Processing Unit — hardware that accelerates matrix operations in ML.',
+};
+
+const JOKES = [
+  'Why do programmers prefer dark mode?\nBecause light attracts bugs!',
+  'Why did the AI go to therapy?\nIt had too many deep issues.',
+  'Why do Python programmers wear glasses?\nBecause they can\'t C#.',
+  'What\'s a computer\'s favourite snack?\nMicrochips.',
+  'Why did the gradient descend?\nIt wanted to reach the global minimum.',
+  'I asked my model to be more creative.\nIt generated 1000 tokens of the word "banana".',
+  'Why was the math book sad?\nIt had too many problems.',
+  'What do you call a neural net that sings?\nA deep learning algorithm... with range.',
+];
+
 const PLUGINS = [
   {
-    re: /calculate|compute|\d+\s*[\+\-\*\/]\s*\d+/i,
+    re: /calculate|compute|sqrt\(|\d+\s*[\+\-\*\/\^]\s*\d+/i,
     fn: t => {
-      const m = t.match(/[\d\+\-\*\/\(\)\.\s\%]+/);
-      if (!m) return 'Could not evaluate.';
-      try { return '= ' + Function('"use strict";return(' + m[0].trim() + ')')(); }
-      catch { return '= ?' }
+      let expr = t.replace(/[^0-9+\-*\/().\s^%]/g,'').replace(/\^/g,'**').trim();
+      try {
+        const r = Function('"use strict";const sqrt=Math.sqrt,pi=Math.PI,e=Math.E,sin=Math.sin,cos=Math.cos,tan=Math.tan,log=Math.log,abs=Math.abs;return(' + expr + ')')();
+        return '= ' + (+r.toFixed(10));
+      } catch { return 'Could not evaluate. Try: calculate 25 * 4 + 10'; }
     }
   },
   {
     re: /\b(time|date|now|today)\b/i,
-    fn: () => 'Current time: ' + new Date().toLocaleString()
-  },
-  {
-    re: /\bdefine\b/i,
-    fn: t => {
-      const defs = {
-        transformer: 'Neural architecture using self-attention, revolutionising NLP.',
-        attention:   'Mechanism letting every token attend to all others, weighting relevance.',
-        gradient:    'Direction of steepest increase — its negative points toward the loss minimum.',
-        llm:         'Large Language Model — trained on massive text corpora.',
-        slm:         'Small Language Model — compact, efficient, runs on your device.',
-        gelu:        'Gaussian Error Linear Unit — smooth non-linear activation used in GPT.',
-        backprop:    'Backpropagation computes gradients using the chain rule to train networks.',
-        overfitting: 'When a model learns training data too well and fails to generalise.',
-        tokenizer:   'Splits text into subword tokens for model processing.',
-        bpe:         'Byte-Pair Encoding — iteratively merge frequent character pairs.',
-        perplexity:  'Model quality metric: lower means better at predicting text.',
-        embedding:   'Dense vector representation of a token in high-dimensional space.',
-        softmax:     'Converts logits into a probability distribution summing to 1.',
-      };
-      const m = t.toLowerCase().match(/define\s+(\w+)/);
-      return m ? (defs[m[1]] || 'No definition for "' + m[1] + '".') : 'Usage: define <term>';
+    fn: () => {
+      const d = new Date();
+      return 'Date : ' + d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) +
+             '\nTime : ' + d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
     }
   },
   {
-    re: /count words/i,
+    re: /\bto\s+(f|c|fahrenheit|celsius|miles?|km|ft|feet|meters?|lbs?|pounds?|kg)\b/i,
+    fn: t => {
+      const l = t.toLowerCase();
+      let m;
+      if ((m=l.match(/([\d.]+)\s*c\b.*\bf\b/))) return m[1]+'°C = '+(+m[1]*9/5+32).toFixed(1)+'°F';
+      if ((m=l.match(/([\d.]+)\s*f\b.*\bc\b/))) return m[1]+'°F = '+((+m[1]-32)*5/9).toFixed(1)+'°C';
+      if ((m=l.match(/([\d.]+)\s*km.*miles?/))) return m[1]+' km = '+(+m[1]*0.621371).toFixed(3)+' miles';
+      if ((m=l.match(/([\d.]+)\s*miles?.*km/))) return m[1]+' miles = '+(+m[1]*1.60934).toFixed(3)+' km';
+      if ((m=l.match(/([\d.]+)\s*m\b.*\bft\b/))) return m[1]+' m = '+(+m[1]*3.28084).toFixed(3)+' ft';
+      if ((m=l.match(/([\d.]+)\s*ft\b.*\bm\b/))) return m[1]+' ft = '+(+m[1]*0.3048).toFixed(3)+' m';
+      if ((m=l.match(/([\d.]+)\s*kg.*lbs?/))) return m[1]+' kg = '+(+m[1]*2.20462).toFixed(3)+' lbs';
+      if ((m=l.match(/([\d.]+)\s*lbs?.*kg/))) return m[1]+' lbs = '+(+m[1]*0.453592).toFixed(3)+' kg';
+      return 'Examples: 25 C to F  |  10 km to miles  |  70 kg to lbs  |  6 ft to m';
+    }
+  },
+  {
+    re: /\bcount words\b/i,
     fn: t => {
       const m = t.match(/count words in (.+)/i);
-      return 'Word count: ' + (m ? m[1] : t).split(/\s+/).filter(Boolean).length;
+      const s = m ? m[1] : t;
+      return 'Words      : ' + s.split(/\s+/).filter(Boolean).length +
+             '\nCharacters : ' + s.length +
+             '\nLetters    : ' + s.replace(/\s/g,'').length;
+    }
+  },
+  {
+    re: /\bpalindrome\b/i,
+    fn: t => {
+      const m = t.match(/palindrome\s+(.+)/i);
+      if (!m) return 'Usage: palindrome <word>';
+      const w = m[1].trim().toLowerCase().replace(/[^a-z0-9]/g,'');
+      return '"' + m[1].trim() + '" is a palindrome: ' + (w === w.split('').reverse().join('') ? 'Yes ✓' : 'No ✗');
+    }
+  },
+  {
+    re: /\bprime\b/i,
+    fn: t => {
+      const m = t.match(/prime\s+(\d+)/i);
+      if (!m) return 'Usage: prime <number>';
+      const n = parseInt(m[1]);
+      if (n < 2) return n + ' is NOT prime';
+      for (let i=2; i<=Math.sqrt(n); i++) if (n%i===0) return n+' is NOT prime (divisible by '+i+')';
+      return n + ' IS prime ✓';
+    }
+  },
+  {
+    re: /\bfibonacci\b/i,
+    fn: t => {
+      const m = t.match(/fibonacci\s+(\d+)/i);
+      if (!m) return 'Usage: fibonacci <n>  e.g. fibonacci 10';
+      const n = Math.min(parseInt(m[1]), 30);
+      let a=0, b=1, seq=[0];
+      for (let i=1; i<n; i++) { [a,b]=[b,a+b]; seq.push(a); }
+      return 'Fibonacci ('+n+' terms):\n'+seq.join(', ');
+    }
+  },
+  {
+    re: /\brandom\b/i,
+    fn: t => {
+      let m = t.match(/random\s+(\d+)\s+(?:to|-)\s+(\d+)/i);
+      if (m) return 'Random ('+m[1]+'–'+m[2]+'): '+( Math.floor(Math.random()*(+m[2]-+m[1]+1))+parseInt(m[1]) );
+      m = t.match(/random\s+(\d+)/i);
+      if (m) return 'Random (1–'+m[1]+'): '+(Math.floor(Math.random()*parseInt(m[1]))+1);
+      return 'Random (1–100): '+(Math.floor(Math.random()*100)+1);
     }
   },
   {
     re: /\breverse\b/i,
     fn: t => {
       const m = t.match(/reverse\s+(.+)/i);
-      return m ? m[1].split('').reverse().join('') : '...';
+      const s = m ? m[1] : t;
+      return 'Reversed: ' + s.split('').reverse().join('');
+    }
+  },
+  {
+    re: /\buppercase\b/i,
+    fn: t => { const m=t.match(/uppercase\s+(.+)/i); return (m?m[1]:t).toUpperCase(); }
+  },
+  {
+    re: /\blowercase\b/i,
+    fn: t => { const m=t.match(/lowercase\s+(.+)/i); return (m?m[1]:t).toLowerCase(); }
+  },
+  {
+    re: /\bjoke\b/i,
+    fn: () => JOKES[Math.floor(Math.random()*JOKES.length)]
+  },
+  {
+    re: /\bdefine\b/i,
+    fn: t => {
+      const m = t.match(/define\s+(\S+)/i);
+      if (!m) return 'Available terms:\n' + Object.keys(DEFS).join('  ') + '\n\nUsage: define <term>';
+      const w = m[1].toLowerCase().replace(/[?.,]/g,'');
+      if (DEFS[w]) return w.toUpperCase() + '\n' + DEFS[w];
+      const close = Object.keys(DEFS).filter(k => k.startsWith(w.slice(0,3)));
+      return close.length ? 'Did you mean: ' + close.join(', ') + '?' : 'No definition for "'+w+'". Type: define  (to list all)';
     }
   },
   {
     re: /^\s*help\s*$/i,
     fn: () =>
-      'SLM plugins:\n' +
-      '  calculate <expr>       — math\n' +
-      '  define <term>          — AI/ML terms\n' +
-      '  time / date            — current time\n' +
-      '  count words in <text>  — word count\n' +
-      '  reverse <text>         — reverse text\n' +
-      '  help                   — this list'
+`╔══════════════════════════════════════════════╗
+║             SLM  HELP  MENU                  ║
+╚══════════════════════════════════════════════╝
+
+📐 MATHS & NUMBERS
+  calculate <expr>         any math expression
+    → calculate 25 * 4 + 10
+    → calculate sqrt(144)
+    → calculate pi * 5^2
+
+  random                   random number 1–100
+  random 50                random number 1–50
+  random 10 to 99          random in range
+
+  prime <n>                is this number prime?
+    → prime 17
+
+  fibonacci <n>            fibonacci sequence
+    → fibonacci 10
+
+🔡 TEXT TOOLS
+  reverse <text>           reverse any text
+    → reverse Hello World
+
+  uppercase <text>         convert to UPPERCASE
+  lowercase <text>         convert to lowercase
+
+  count words in <text>    word + character count
+    → count words in the quick brown fox
+
+  palindrome <word>        palindrome check
+    → palindrome racecar
+
+🔄 UNIT CONVERTER
+  25 C to F                temperature (C ↔ F)
+  10 km to miles           distance (km ↔ miles)
+  6 ft to m                height (ft ↔ m)
+  70 kg to lbs             weight (kg ↔ lbs)
+
+📚 KNOWLEDGE
+  define <term>            look up AI/ML term
+    → define transformer
+    → define attention
+    → define               lists all terms
+
+🕐 DATE & TIME
+  time                     current date and time
+
+😄 FUN
+  joke                     tell a random joke
+
+ℹ️  SYSTEM
+  help                     show this menu`
   }
 ];
 
