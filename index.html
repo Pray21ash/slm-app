@@ -347,6 +347,7 @@ input[type=range]::-webkit-slider-thumb {
         <span class="status-dot"></span>
         <span id="status-text">ready</span>
       </div>
+      <div class="icon-btn" onclick="newChat()" title="New chat">✏️</div>
       <div class="icon-btn" onclick="openDrawer()" title="Settings">⚙️</div>
     </div>
   </div>
@@ -407,8 +408,8 @@ input[type=range]::-webkit-slider-thumb {
     <button class="drawer-btn green" onclick="runImprove(); closeDrawer()">
       ⚡ Self-improve model
     </button>
-    <button class="drawer-btn red" onclick="resetCtx(); closeDrawer()">
-      ↺ Reset conversation
+    <button class="drawer-btn red" onclick="newChat(); closeDrawer()">
+      ✏️ New chat
     </button>
   </div>
 
@@ -1149,10 +1150,26 @@ function closeDrawer() {
   document.getElementById('overlay').classList.remove('open');
 }
 
-function resetCtx() {
+function newChat() {
   history = [];
-  chat.innerHTML = '';
-  toast('Context cleared');
+  chat.innerHTML = `
+    <div class="welcome" id="welcome">
+      <div class="welcome-logo">SLM_</div>
+      <div class="welcome-sub">A small language model running entirely<br>on your device. No internet. No server.</div>
+      <div class="chip-row">
+        <div class="chip" onclick="quickSend('help')">📋 help</div>
+        <div class="chip" onclick="quickSend('calculate sqrt(144)')">📐 calculate</div>
+        <div class="chip" onclick="quickSend('25 C to F')">🔄 convert</div>
+        <div class="chip" onclick="quickSend('prime 17')">🔢 prime 17</div>
+        <div class="chip" onclick="quickSend('define transformer')">📚 define</div>
+        <div class="chip" onclick="quickSend('fibonacci 10')">🌀 fibonacci</div>
+        <div class="chip" onclick="quickSend('joke')">😄 joke</div>
+        <div class="chip" onclick="quickSend('time')">🕐 time</div>
+      </div>
+    </div>`;
+  input.value = '';
+  input.style.height = 'auto';
+  toast('New chat started');
 }
 
 function runImprove() {
