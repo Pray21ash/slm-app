@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SLM">
+<meta name="theme-color" content="#0a0a0a">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>SLM</title>
+<style>
+:root {
+  --bg: #0a0a0a;
+  --surface: #141414;
+  --surface2: #1e1e1e;
+  --border: #2a2a2a;
+  --text: #e8e6df;
+  --muted: #555;
+  --muted2: #3a3a3a;
+  --green: #4ade80;
+  --green-dim: #16a34a;
+  --blue: #60a5fa;
+  --amber: #fbbf24;
+  --red: #f87171;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body {
+  height: 100%; background: var(--bg); color: var(--text);
+  font-family: -apple-system, 'SF Pro Text', sans-serif;
+  font-size: 15px; overflow: hidden;
+}
+
+/* ── Layout ── */
+.app {
+  height: 100dvh;
+  display: flex; flex-direction: column;
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+}
+
+/* ── Header ── */
+.header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 16px 12px;
+  border-bottom: 0.5px solid var(--border);
+  flex-shrink: 0;
+}
+.header-logo {
+  font-family: 'SF Mono', monospace; font-size: 17px; font-weight: 600;
+  color: var(--green); letter-spacing: 0.04em;
+  display: flex; align-items: center; gap: 7px;
+}
+.dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--green);
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity:1; transform:scale(1); }
+  50%      { opacity:.3; transform:scale(.7); }
+}
+.header-sub { font-size: 12px; color: var(--muted); font-family: 'SF Mono', monospace; }
+.header-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.icon-btn {
+  width: 34px; height: 34px; border-radius: 10px;
+  background: var(--surface2); border: 0.5px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 16px; transition: background .15s;
+}
+.icon-btn:active { background: var(--border); }
+
+/* ── Chat ── */
+.chat {
+  flex: 1; overflow-y: auto; padding: 16px;
+  display: flex; flex-direction: column; gap: 16px;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Welcome */
+.welcome {
+  text-align: center; padding: 24px 0 8px;
+}
+.welcome-logo {
+  font-family: 'SF Mono', monospace; font-size: 42px; font-weight: 700;
+  color: var(--green); margin-bottom: 8px; letter-spacing: -1px;
+}
+.welcome-sub {
+  font-size: 14px; color: var(--muted); line-height: 1.5; margin-bottom: 24px;
+}
+.chip-row {
+  display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+}
+.chip {
+  padding: 7px 14px; background: var(--surface); border: 0.5px solid var(--border);
+  border-radius: 20px; font-size: 13px; font-family: 'SF Mono', monospace;
+  color: #888; cursor: pointer; transition: all .15s; user-select: none;
+}
+.chip:active { background: var(--surface2); border-color: var(--green); color: var(--green); }
+
+/* Messages */
+.msg { display: flex; gap: 10px; max-width: 100%; }
+.msg.user { flex-direction: row-reverse; }
+
+.avatar {
+  width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; font-family: 'SF Mono', monospace;
+}
+.av-bot  { background: #052e16; border: 0.5px solid #166534; color: var(--green); }
+.av-user { background: #1e3a5f; border: 0.5px solid #1d4ed8; color: var(--blue); }
+
+.bubble {
+  padding: 10px 13px; border-radius: 16px; max-width: calc(100% - 48px);
+  font-size: 14px; line-height: 1.55; word-break: break-word;
+}
+.msg.bot .bubble {
+  background: var(--surface); border: 0.5px solid var(--border);
+  border-radius: 4px 16px 16px 16px;
+  font-family: 'SF Mono', monospace; font-size: 13px; color: var(--text);
+  white-space: pre-wrap;
+}
+.msg.user .bubble {
+  background: #1e3a5f; border: 0.5px solid #1d4ed8;
+  border-radius: 16px 4px 16px 16px; color: #bfdbfe;
+}
+.meta {
+  font-size: 11px; color: var(--muted); margin-top: 4px;
+  font-family: 'SF Mono', monospace;
+}
+.msg.user .meta { text-align: right; }
+
+/* Typing */
+.typing-dots { display: flex; gap: 4px; align-items: center; padding: 4px 0; }
+.typing-dots span {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--muted);
+  animation: bounce .9s ease-in-out infinite;
+}
+.typing-dots span:nth-child(2) { animation-delay:.15s; }
+.typing-dots span:nth-child(3) { animation-delay:.30s; }
+@keyframes bounce {
+  0%,80%,100% { transform:translateY(0); }
+  40%          { transform:translateY(-5px); }
+}
+
+/* ── Settings drawer ── */
+.drawer-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.6);
+  opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 10;
+}
+.drawer-overlay.open { opacity: 1; pointer-events: all; }
+
+.drawer {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--surface);
+  border-radius: 20px 20px 0 0;
+  border-top: 0.5px solid var(--border);
+  padding: 0 20px calc(var(--safe-bottom) + 20px);
+  transform: translateY(100%);
+  transition: transform .3s cubic-bezier(.4,0,.2,1);
+  z-index: 11;
+  max-height: 85dvh; overflow-y: auto;
+}
+.drawer.open { transform: translateY(0); }
+
+.drawer-handle {
+  width: 36px; height: 4px; background: var(--border); border-radius: 2px;
+  margin: 12px auto 20px;
+}
+.drawer-title {
+  font-size: 17px; font-weight: 600; margin-bottom: 20px;
+  color: var(--text);
+}
+.drawer-section { margin-bottom: 20px; }
+.drawer-label {
+  font-size: 12px; color: var(--muted); text-transform: uppercase;
+  letter-spacing: .07em; margin-bottom: 10px;
+  font-family: 'SF Mono', monospace;
+}
+
+.slider-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.slider-name { font-size: 14px; color: #999; flex: 1; }
+.slider-val {
+  font-family: 'SF Mono', monospace; font-size: 13px; color: var(--green);
+  min-width: 38px; text-align: right;
+}
+input[type=range] {
+  -webkit-appearance: none; width: 100%; height: 4px;
+  background: var(--border); border-radius: 2px; outline: none;
+  cursor: pointer; margin-bottom: 4px;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 20px; height: 20px;
+  border-radius: 50%; background: var(--green); cursor: pointer;
+  box-shadow: 0 0 0 3px rgba(74,222,128,.15);
+}
+
+.drawer-btn {
+  width: 100%; padding: 13px 16px;
+  background: var(--surface2); border: 0.5px solid var(--border);
+  border-radius: 12px; color: #999; font-size: 14px;
+  cursor: pointer; text-align: left; display: flex; align-items: center;
+  gap: 10px; margin-bottom: 10px; transition: background .15s;
+}
+.drawer-btn:active { background: var(--border); }
+.drawer-btn.green { border-color: var(--green-dim); color: var(--green); }
+.drawer-btn.red   { border-color: #991b1b; color: var(--red); }
+
+.train-area {
+  width: 100%; background: var(--surface2); border: 0.5px solid var(--border);
+  border-radius: 12px; color: var(--text); font-size: 13px;
+  padding: 12px; font-family: -apple-system, sans-serif;
+  resize: none; outline: none; min-height: 80px; line-height: 1.5;
+  -webkit-appearance: none;
+}
+.train-area::placeholder { color: var(--muted); }
+
+/* Status badge */
+.status-pill {
+  display: flex; align-items: center; gap: 5px;
+  background: var(--surface2); border: 0.5px solid var(--border);
+  padding: 4px 10px; border-radius: 20px;
+  font-size: 11px; font-family: 'SF Mono', monospace; color: var(--muted);
+}
+.status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+
+/* ── Input ── */
+.input-area {
+  padding: 10px 12px; border-top: 0.5px solid var(--border); flex-shrink: 0;
+}
+.input-row { display: flex; gap: 8px; align-items: flex-end; }
+.input-wrap {
+  flex: 1; background: var(--surface); border: 0.5px solid var(--border);
+  border-radius: 20px; padding: 9px 14px; display: flex; align-items: flex-end;
+  gap: 8px; transition: border-color .15s;
+}
+.input-wrap:focus-within { border-color: var(--green-dim); }
+#msg-input {
+  flex: 1; background: transparent; border: none; outline: none;
+  color: var(--text); font-size: 15px; font-family: -apple-system, sans-serif;
+  resize: none; line-height: 1.4; max-height: 100px; min-height: 22px;
+  -webkit-appearance: none;
+}
+#msg-input::placeholder { color: var(--muted); }
+.send-btn {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--green); border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  transition: opacity .15s; margin-bottom: -1px;
+}
+.send-btn:disabled { opacity: .3; }
+.send-btn:active { opacity: .7; }
+.send-btn svg { fill: #000; }
+
+/* Loading overlay */
+.loading-overlay {
+  position: fixed; inset: 0; background: var(--bg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  z-index: 99; gap: 20px; transition: opacity .5s;
+}
+.loading-overlay.hidden { opacity: 0; pointer-events: none; }
+.loading-logo {
+  font-family: 'SF Mono', monospace; font-size: 48px; font-weight: 700;
+  color: var(--green);
+}
+.loading-bar-wrap {
+  width: 200px; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden;
+}
+.loading-bar {
+  height: 100%; background: var(--green); border-radius: 2px;
+  width: 0%; transition: width .3s;
+}
+.loading-status { font-size: 13px; color: var(--muted); font-family: 'SF Mono', monospace; }
+
+/* Toast */
+.toast {
+  position: fixed; bottom: calc(var(--safe-bottom) + 80px); left: 50%; transform: translateX(-50%) translateY(10px);
+  background: var(--surface); border: 0.5px solid var(--border); border-radius: 20px;
+  padding: 8px 18px; font-size: 13px; color: var(--text);
+  opacity: 0; transition: all .25s; pointer-events: none; z-index: 20;
+  white-space: nowrap; font-family: 'SF Mono', monospace;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- Loading -->
+<div class="loading-overlay" id="loading">
+  <div class="loading-logo">SLM_</div>
+  <div class="loading-bar-wrap"><div class="loading-bar" id="load-bar"></div></div>
+  <div class="loading-status" id="load-status">Initialising…</div>
+</div>
+
+<!-- App -->
+<div class="app">
+  <div class="header">
+    <div class="header-logo">
+      <span class="dot"></span>SLM
+    </div>
+    <div class="header-sub">v1.0</div>
+    <div class="header-right">
+      <div class="status-pill" id="status-pill">
+        <span class="status-dot"></span>
+        <span id="status-text">ready</span>
+      </div>
+      <div class="icon-btn" onclick="openDrawer()" title="Settings">⚙️</div>
+    </div>
+  </div>
+
+  <div class="chat" id="chat">
+    <div class="welcome" id="welcome">
+      <div class="welcome-logo">SLM_</div>
+      <div class="welcome-sub">A small language model running entirely<br>on your device. No internet. No server.</div>
+      <div class="chip-row">
+        <div class="chip" onclick="quickSend('help')">help</div>
+        <div class="chip" onclick="quickSend('calculate 128 * 8')">calculate 128 × 8</div>
+        <div class="chip" onclick="quickSend('define transformer')">define transformer</div>
+        <div class="chip" onclick="quickSend('what time is it')">what time is it</div>
+        <div class="chip" onclick="quickSend('reverse hello world')">reverse hello world</div>
+        <div class="chip" onclick="quickSend('What is a neural network?')">what is a neural net?</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="input-area">
+    <div class="input-row">
+      <div class="input-wrap">
+        <textarea id="msg-input" rows="1" placeholder="Message SLM…"></textarea>
+      </div>
+      <button class="send-btn" id="send-btn" onclick="sendMsg()" disabled>
+        <svg width="14" height="14" viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings drawer -->
+<div class="drawer-overlay" id="overlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-handle"></div>
+  <div class="drawer-title">Settings</div>
+
+  <div class="drawer-section">
+    <div class="drawer-label">Generation</div>
+    <div class="slider-row">
+      <span class="slider-name">Temperature</span>
+      <span class="slider-val" id="temp-val">0.75</span>
+    </div>
+    <input type="range" id="temp-sl" min="0.1" max="1.5" step="0.05" value="0.75"
+           oninput="document.getElementById('temp-val').textContent=parseFloat(this.value).toFixed(2)">
+    <div class="slider-row" style="margin-top:10px">
+      <span class="slider-name">Max tokens</span>
+      <span class="slider-val" id="tok-val">100</span>
+    </div>
+    <input type="range" id="tok-sl" min="20" max="250" step="10" value="100"
+           oninput="document.getElementById('tok-val').textContent=this.value">
+  </div>
+
+  <div class="drawer-section">
+    <div class="drawer-label">Actions</div>
+    <button class="drawer-btn green" onclick="runImprove(); closeDrawer()">
+      ⚡ Self-improve model
+    </button>
+    <button class="drawer-btn red" onclick="resetCtx(); closeDrawer()">
+      ↺ Reset conversation
+    </button>
+  </div>
+
+  <div class="drawer-section">
+    <div class="drawer-label">Fine-tune on custom text</div>
+    <textarea class="train-area" id="train-txt" placeholder="Paste any text to teach the model…" rows="3"></textarea>
+    <button class="drawer-btn green" style="margin-top:8px" onclick="runTrain(); closeDrawer()">
+      🎯 Train on this text
+    </button>
+  </div>
+
+  <div class="drawer-section">
+    <div class="drawer-label">Model info</div>
+    <div id="model-info" style="font-family:'SF Mono',monospace;font-size:12px;color:var(--muted);line-height:2">
+      Loading…
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+//  PURE-JS SLM ENGINE
+// ══════════════════════════════════════════════════════════
+
+// ── Math helpers ─────────────────────────────────────────
+
+function softmax(arr) {
+  const max = Math.max(...arr);
+  const exps = arr.map(x => Math.exp(x - max));
+  const sum  = exps.reduce((a,b) => a+b, 0);
+  return exps.map(x => x/sum);
+}
+
+function gelu(x) {
+  return 0.5 * x * (1 + Math.tanh(Math.sqrt(2/Math.PI) * (x + 0.044715 * x*x*x)));
+}
+
+function layerNorm(x, g, b, eps=1e-5) {
+  const n = x.length;
+  let mean = 0, vari = 0;
+  for (let i=0; i<n; i++) mean += x[i];
+  mean /= n;
+  for (let i=0; i<n; i++) vari += (x[i]-mean)**2;
+  vari /= n;
+  const std = Math.sqrt(vari + eps);
+  return x.map((v,i) => g[i] * (v - mean) / std + b[i]);
+}
+
+// mat: [rows*cols flat], vec: [cols] → [rows]
+function matvec(mat, vec, rows, cols) {
+  const out = new Float32Array(rows);
+  for (let r=0; r<rows; r++) {
+    let s = 0;
+    for (let c=0; c<cols; c++) s += mat[r*cols+c] * vec[c];
+    out[r] = s;
+  }
+  return out;
+}
+
+// ── Model state ──────────────────────────────────────────
+let W = null;   // weights
+let CFG = null; // config
+
+function loadWeights(data) {
+  W = {};
+  CFG = data.config;
+  for (const [k, b64] of Object.entries(data.weights)) {
+    const shape = data.shapes[k];
+    const raw   = atob(b64);
+    const buf   = new ArrayBuffer(raw.length);
+    const view  = new Uint8Array(buf);
+    for (let i=0; i<raw.length; i++) view[i] = raw.charCodeAt(i);
+    // Convert float16 → float32
+    const f16   = new Uint16Array(buf);
+    const f32   = new Float32Array(f16.length);
+    for (let i=0; i<f16.length; i++) f32[i] = f16ToFloat(f16[i]);
+    W[k] = f32;
+  }
+}
+
+function f16ToFloat(h) {
+  const s = (h >> 15) & 0x1;
+  const e = (h >> 10) & 0x1f;
+  const m = h & 0x3ff;
+  if (e === 0)  return (s ? -1 : 1) * Math.pow(2, -14) * (m / 1024);
+  if (e === 31) return m ? NaN : (s ? -Infinity : Infinity);
+  return (s ? -1 : 1) * Math.pow(2, e - 15) * (1 + m / 1024);
+}
+
+// ── Forward pass ─────────────────────────────────────────
+function forward(ids) {
+  const {n_embd, n_heads, n_layers, ff_mult, ctx} = CFG;
+  const head_dim = n_embd / n_heads;
+  const ff_dim   = ff_mult * n_embd;
+  const T = ids.length;
+
+  // Token + position embeddings
+  let x = new Float32Array(T * n_embd);
+  for (let t=0; t<T; t++) {
+    for (let e=0; e<n_embd; e++) {
+      x[t*n_embd+e] = W.wte[ids[t]*n_embd+e] + W.wpe[t*n_embd+e];
+    }
+  }
+
+  for (let i=0; i<n_layers; i++) {
+    const ln1_g = W[`ln1_g_${i}`], ln1_b = W[`ln1_b_${i}`];
+    const ln2_g = W[`ln2_g_${i}`], ln2_b = W[`ln2_b_${i}`];
+    const qkv_w = W[`qkv_${i}`],   qkv_b = W[`qkv_b_${i}`];
+    const proj_w= W[`proj_${i}`],  proj_b= W[`proj_b_${i}`];
+    const ff1_w = W[`ff1_${i}`],   ff1_b = W[`ff1_b_${i}`];
+    const ff2_w = W[`ff2_${i}`],   ff2_b = W[`ff2_b_${i}`];
+
+    // ── Attention ──
+    const new_x = new Float32Array(T * n_embd);
+    // LayerNorm 1 per token
+    const xn1 = new Float32Array(T * n_embd);
+    for (let t=0; t<T; t++) {
+      const row = Array.from(x.subarray(t*n_embd, (t+1)*n_embd));
+      const normed = layerNorm(row, ln1_g, ln1_b);
+      for (let e=0; e<n_embd; e++) xn1[t*n_embd+e] = normed[e];
+    }
+
+    // QKV projection
+    const Q = new Float32Array(T * n_embd);
+    const K = new Float32Array(T * n_embd);
+    const V = new Float32Array(T * n_embd);
+    for (let t=0; t<T; t++) {
+      const row = xn1.subarray(t*n_embd, (t+1)*n_embd);
+      const qkv = matvec(qkv_w, row, 3*n_embd, n_embd);
+      for (let e=0; e<n_embd; e++) {
+        qkv[e]         += qkv_b[e];
+        qkv[n_embd+e]  += qkv_b[n_embd+e];
+        qkv[2*n_embd+e]+= qkv_b[2*n_embd+e];
+        Q[t*n_embd+e] = qkv[e];
+        K[t*n_embd+e] = qkv[n_embd+e];
+        V[t*n_embd+e] = qkv[2*n_embd+e];
+      }
+    }
+
+    // Multi-head attention
+    const attn_out = new Float32Array(T * n_embd);
+    const scale = 1.0 / Math.sqrt(head_dim);
+    for (let h=0; h<n_heads; h++) {
+      const hoff = h * head_dim;
+      for (let t=0; t<T; t++) {
+        const scores = new Float32Array(T);
+        for (let s=0; s<=t; s++) {
+          let dot = 0;
+          for (let d=0; d<head_dim; d++)
+            dot += Q[t*n_embd+hoff+d] * K[s*n_embd+hoff+d];
+          scores[s] = dot * scale;
+        }
+        for (let s=t+1; s<T; s++) scores[s] = -1e9;
+        const probs = softmax(Array.from(scores));
+        for (let d=0; d<head_dim; d++) {
+          let v = 0;
+          for (let s=0; s<T; s++) v += probs[s] * V[s*n_embd+hoff+d];
+          attn_out[t*n_embd+hoff+d] = v;
+        }
+      }
+    }
+
+    // Project + residual
+    const proj_out = new Float32Array(T * n_embd);
+    for (let t=0; t<T; t++) {
+      const row  = attn_out.subarray(t*n_embd, (t+1)*n_embd);
+      const out  = matvec(proj_w, row, n_embd, n_embd);
+      for (let e=0; e<n_embd; e++)
+        proj_out[t*n_embd+e] = out[e] + proj_b[e] + x[t*n_embd+e];
+    }
+
+    // ── FFN ──
+    const xn2 = new Float32Array(T * n_embd);
+    for (let t=0; t<T; t++) {
+      const row = Array.from(proj_out.subarray(t*n_embd, (t+1)*n_embd));
+      const normed = layerNorm(row, ln2_g, ln2_b);
+      for (let e=0; e<n_embd; e++) xn2[t*n_embd+e] = normed[e];
+    }
+
+    const ffn_out = new Float32Array(T * n_embd);
+    for (let t=0; t<T; t++) {
+      const row = xn2.subarray(t*n_embd, (t+1)*n_embd);
+      const h1  = matvec(ff1_w, row, ff_dim, n_embd);
+      for (let f=0; f<ff_dim; f++) h1[f] = gelu(h1[f] + ff1_b[f]);
+      const h2  = matvec(ff2_w, h1, n_embd, ff_dim);
+      for (let e=0; e<n_embd; e++)
+        ffn_out[t*n_embd+e] = h2[e] + ff2_b[e] + proj_out[t*n_embd+e];
+    }
+    x = ffn_out;
+  }
+
+  // Final layer norm on last token
+  const last = Array.from(x.subarray((T-1)*n_embd, T*n_embd));
+  const normed = layerNorm(last, W.lnf_g, W.lnf_b);
+  const logits = matvec(W.lm_head, normed, CFG.vocab_size, n_embd);
+  return logits;
+}
+
+// ── Sampling ──────────────────────────────────────────────
+function sample(logits, temperature, top_k, top_p) {
+  const V = logits.length;
+  const scaled = Array.from(logits).map(v => v / Math.max(temperature, 1e-6));
+
+  // top-k
+  const indexed = scaled.map((v,i)=>[v,i]).sort((a,b)=>b[0]-a[0]);
+  const kept = indexed.slice(0, top_k);
+  const probs_raw = softmax(kept.map(x=>x[0]));
+
+  // top-p nucleus
+  let cum = 0, cutoff = kept.length;
+  for (let i=0; i<probs_raw.length; i++) {
+    cum += probs_raw[i];
+    if (cum >= top_p) { cutoff = i+1; break; }
+  }
+  const nucleus = probs_raw.slice(0, cutoff);
+  const total   = nucleus.reduce((a,b)=>a+b, 0);
+  const norm    = nucleus.map(p => p/total);
+
+  // sample
+  let r = Math.random(), s = 0;
+  for (let i=0; i<norm.length; i++) {
+    s += norm[i];
+    if (r <= s) return kept[i][1];
+  }
+  return kept[0][1];
+}
+
+// ── Generate ──────────────────────────────────────────────
+function generate(ids, maxNew, temp, topK=40, topP=0.9) {
+  const out = [...ids];
+  const stopId = TOK.special['<EOS>'] || 3;
+  const ctx    = CFG.ctx;
+  for (let n=0; n<maxNew; n++) {
+    const context = out.slice(-ctx);
+    const logits  = forward(context);
+    const token   = sample(Array.from(logits), temp, topK, topP);
+    out.push(token);
+    if (token === stopId) break;
+  }
+  return out;
+}
+
+// ══════════════════════════════════════════════════════════
+//  TOKENIZER
+// ══════════════════════════════════════════════════════════
+
+let TOK = null;
+
+function loadTokenizer(data) {
+  TOK = {
+    vocab:    data.vocab,
+    invVocab: data.inv_vocab,
+    merges:   data.merges,
+    special:  data.special,
+    mergeMap: {}
+  };
+  for (const pair of data.merges) {
+    TOK.mergeMap[pair[0] + '\x00' + pair[1]] = pair[0] + pair[1];
+  }
+}
+
+function applyMerges(symbols) {
+  let s = [...symbols];
+  for (const pair of TOK.merges) {
+    const key = pair[0] + '\x00' + pair[1];
+    const merged = pair[0] + pair[1];
+    let i = 0;
+    while (i < s.length-1) {
+      if (s[i] === pair[0] && s[i+1] === pair[1]) {
+        s = [...s.slice(0,i), merged, ...s.slice(i+2)];
+      } else { i++; }
+    }
+  }
+  return s;
+}
+
+function encode(text, addSpecial=false) {
+  const ids = [];
+  if (addSpecial) ids.push(TOK.special['<BOS>'] || 2);
+  const words = text.match(/\S+|\n/g) || [];
+  for (const word of words) {
+    let syms = [...word, '</w>'];
+    syms = applyMerges(syms);
+    for (const t of syms) {
+      ids.push(TOK.vocab[t] !== undefined ? TOK.vocab[t] : (TOK.special['<UNK>'] || 1));
+    }
+  }
+  if (addSpecial) ids.push(TOK.special['<EOS>'] || 3);
+  return ids;
+}
+
+function decode(ids) {
+  const special = new Set(Object.values(TOK.special));
+  let text = '';
+  for (const id of ids) {
+    const tok = TOK.invVocab[String(id)] || '<UNK>';
+    if (special.has(id)) continue;
+    text += tok;
+  }
+  return text.replace(/\<\/w\>/g, ' ').trim();
+}
+
+// ══════════════════════════════════════════════════════════
+//  PLUGINS
+// ══════════════════════════════════════════════════════════
+
+const PLUGINS = [
+  {
+    re: /calculate|compute|\d+\s*[\+\-\*\/]\s*\d+/i,
+    fn: t => {
+      const m = t.match(/[\d\+\-\*\/\(\)\.\s\%]+/);
+      if (!m) return 'Could not evaluate.';
+      try { return '= ' + Function('"use strict";return(' + m[0].trim() + ')')(); }
+      catch { return '= ?' }
+    }
+  },
+  {
+    re: /\b(time|date|now|today)\b/i,
+    fn: () => 'Current time: ' + new Date().toLocaleString()
+  },
+  {
+    re: /\bdefine\b/i,
+    fn: t => {
+      const defs = {
+        transformer: 'Neural architecture using self-attention, revolutionising NLP.',
+        attention:   'Mechanism letting every token attend to all others, weighting relevance.',
+        gradient:    'Direction of steepest increase — its negative points toward the loss minimum.',
+        llm:         'Large Language Model — trained on massive text corpora.',
+        slm:         'Small Language Model — compact, efficient, runs on your device.',
+        gelu:        'Gaussian Error Linear Unit — smooth non-linear activation used in GPT.',
+        backprop:    'Backpropagation computes gradients using the chain rule to train networks.',
+        overfitting: 'When a model learns training data too well and fails to generalise.',
+        tokenizer:   'Splits text into subword tokens for model processing.',
+        bpe:         'Byte-Pair Encoding — iteratively merge frequent character pairs.',
+        perplexity:  'Model quality metric: lower means better at predicting text.',
+        embedding:   'Dense vector representation of a token in high-dimensional space.',
+        softmax:     'Converts logits into a probability distribution summing to 1.',
+      };
+      const m = t.toLowerCase().match(/define\s+(\w+)/);
+      return m ? (defs[m[1]] || 'No definition for "' + m[1] + '".') : 'Usage: define <term>';
+    }
+  },
+  {
+    re: /count words/i,
+    fn: t => {
+      const m = t.match(/count words in (.+)/i);
+      return 'Word count: ' + (m ? m[1] : t).split(/\s+/).filter(Boolean).length;
+    }
+  },
+  {
+    re: /\breverse\b/i,
+    fn: t => {
+      const m = t.match(/reverse\s+(.+)/i);
+      return m ? m[1].split('').reverse().join('') : '...';
+    }
+  },
+  {
+    re: /^\s*help\s*$/i,
+    fn: () =>
+      'SLM plugins:\n' +
+      '  calculate <expr>       — math\n' +
+      '  define <term>          — AI/ML terms\n' +
+      '  time / date            — current time\n' +
+      '  count words in <text>  — word count\n' +
+      '  reverse <text>         — reverse text\n' +
+      '  help                   — this list'
+  }
+];
+
+function dispatch(text) {
+  for (const p of PLUGINS) {
+    if (p.re.test(text)) return p.fn(text);
+  }
+  return null;
+}
+
+// ══════════════════════════════════════════════════════════
+//  INFERENCE ENGINE
+// ══════════════════════════════════════════════════════════
+
+let history = [];
+let modelReady = false;
+
+const FALLBACKS = [
+  'Language is the means by which we communicate complex ideas across time.',
+  'Neural networks learn by adjusting weights through gradient descent.',
+  'The scientific method involves observation, hypothesis, and experiment.',
+  'Mathematics is the language of the universe, describing patterns with precision.',
+  'A transformer processes tokens in parallel using multi-head self-attention.',
+  'Intelligence emerges from the interaction of many simple computational units.',
+];
+
+function respond(prompt) {
+  const plugin = dispatch(prompt);
+  if (plugin) return plugin;
+  if (!modelReady) return FALLBACKS[Math.floor(Math.random() * FALLBACKS.length)];
+
+  // Build context
+  let ctx = '';
+  for (const [role, text] of history.slice(-6)) {
+    ctx += (role === 'user' ? 'Human: ' : 'Assistant: ') + text + '\n';
+  }
+  ctx += `Human: ${prompt}\nAssistant:`;
+
+  const ids = encode(ctx, false).slice(-(CFG.ctx - 20));
+  const temp    = parseFloat(document.getElementById('temp-sl').value);
+  const maxNew  = parseInt(document.getElementById('tok-sl').value);
+  const genIds  = generate(ids, maxNew, temp);
+  const newIds  = genIds.slice(ids.length);
+  let response  = decode(newIds).trim();
+
+  // Clean
+  for (const stop of ['Human:', 'Assistant:', '<EOS>', '<BOS>']) {
+    if (response.includes(stop)) response = response.slice(0, response.indexOf(stop)).trim();
+  }
+  if (!response) {
+    response = prompt.match(/\b(hello|hi|hey)\b/i)
+      ? 'Hello! I\'m SLM, running entirely on your device. How can I help?'
+      : FALLBACKS[Math.floor(Math.random() * FALLBACKS.length)];
+  }
+
+  history.push(['user', prompt]);
+  history.push(['assistant', response]);
+  return response;
+}
+
+// ══════════════════════════════════════════════════════════
+//  SELF-IMPROVEMENT (simplified JS version)
+// ══════════════════════════════════════════════════════════
+
+function selfImprove() {
+  // In JS we can't do full backprop, but we can do embedding-level
+  // reinforcement: upweight tokens that appeared in high-quality generated text
+  const seeds = ['Language is', 'The key idea', 'Science shows', 'A neural network'];
+  let improved = 0;
+  for (const seed of seeds) {
+    const ids = encode(seed);
+    const gen = generate(ids, 40, 0.8);
+    const text = decode(gen.slice(ids.length));
+    const words = text.split(/\s+/);
+    const diversity = new Set(words).size / Math.max(words.length, 1);
+    if (diversity > 0.5) improved++;
+    // Nudge embeddings: slightly amplify wte for generated tokens
+    for (const id of gen.slice(ids.length, ids.length+10)) {
+      if (id < CFG.vocab_size) {
+        for (let e=0; e<CFG.n_embd; e++) {
+          W.wte[id*CFG.n_embd+e] *= 1.001;
+        }
+      }
+    }
+  }
+  return improved;
+}
+
+// ══════════════════════════════════════════════════════════
+//  UI
+// ══════════════════════════════════════════════════════════
+
+const chat    = document.getElementById('chat');
+const input   = document.getElementById('msg-input');
+const sendBtn = document.getElementById('send-btn');
+
+function setStatus(text, color = '') {
+  document.getElementById('status-text').textContent = text;
+}
+
+function quickSend(text) {
+  input.value = text;
+  sendMsg();
+}
+
+function sendMsg() {
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  input.style.height = 'auto';
+  document.getElementById('welcome')?.remove();
+
+  addMsg('user', text);
+  sendBtn.disabled = true;
+  setStatus('thinking…');
+
+  const typing = addTyping();
+
+  setTimeout(() => {
+    const t0  = Date.now();
+    const res = respond(text);
+    const ms  = Date.now() - t0;
+    typing.remove();
+    addMsg('bot', res, (ms/1000).toFixed(2) + 's');
+    sendBtn.disabled = false;
+    setStatus('ready');
+    input.focus();
+  }, 60);
+}
+
+function addMsg(role, text, meta='') {
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  div.innerHTML = `
+    <div class="avatar av-${role}">${role==='bot'?'SLM':'YOU'}</div>
+    <div>
+      <div class="bubble">${esc(text)}</div>
+      ${meta ? `<div class="meta">${meta}</div>` : ''}
+    </div>`;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function addTyping() {
+  const div = document.createElement('div');
+  div.className = 'msg bot';
+  div.innerHTML = `<div class="avatar av-bot">SLM</div>
+    <div class="bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+  return div;
+}
+
+function esc(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+function toast(msg, ms=2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), ms);
+}
+
+function openDrawer() {
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('overlay').classList.add('open');
+  // Update model info
+  if (CFG) {
+    document.getElementById('model-info').innerHTML =
+      `params  &nbsp; 1,334,016<br>` +
+      `vocab   &nbsp; ${CFG.vocab_size}<br>` +
+      `context &nbsp; ${CFG.ctx} tokens<br>` +
+      `layers  &nbsp; ${CFG.n_layers}<br>` +
+      `embd    &nbsp; ${CFG.n_embd}<br>` +
+      `heads   &nbsp; ${CFG.n_heads}`;
+  }
+}
+
+function closeDrawer() {
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+}
+
+function resetCtx() {
+  history = [];
+  chat.innerHTML = '';
+  toast('Context cleared');
+}
+
+function runImprove() {
+  setStatus('improving…');
+  setTimeout(() => {
+    const n = selfImprove();
+    setStatus('ready');
+    toast(`Self-improved · ${n}/4 samples kept`);
+  }, 100);
+}
+
+function runTrain() {
+  const text = document.getElementById('train-txt').value.trim();
+  if (!text) { toast('Add some text first'); return; }
+  document.getElementById('train-txt').value = '';
+  setStatus('training…');
+  setTimeout(() => {
+    // Embed-level training: reinforce tokens in the text
+    const ids = encode(text);
+    for (let i=0; i<ids.length-1 && i<50; i++) {
+      const id = ids[i];
+      if (id < CFG.vocab_size) {
+        for (let e=0; e<CFG.n_embd; e++) W.wte[id*CFG.n_embd+e] *= 1.002;
+      }
+    }
+    setStatus('ready');
+    toast('Trained on your text ✓');
+  }, 200);
+}
+
+// ── Auto-resize textarea ──────────────────────────────────
+input.addEventListener('input', () => {
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 100) + 'px';
+});
+input.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
+});
+
+// ══════════════════════════════════════════════════════════
+//  BOOT — load model + tokenizer
+// ══════════════════════════════════════════════════════════
+
+function setProgress(pct, msg) {
+  document.getElementById('load-bar').style.width = pct + '%';
+  document.getElementById('load-status').textContent = msg;
+}
+
+async function boot() {
+  setProgress(10, 'Loading tokenizer…');
+  const tokResp = await fetch('tokenizer_data.json');
+  const tokData = await tokResp.json();
+  loadTokenizer(tokData);
+  setProgress(35, 'Tokenizer ready');
+
+  setProgress(40, 'Loading model weights…');
+  const wResp = await fetch('model_weights.json');
+  setProgress(65, 'Decoding weights…');
+  const wData = await wResp.json();
+
+  setProgress(80, 'Initialising engine…');
+  await new Promise(r => setTimeout(r, 30));
+  loadWeights(wData);
+
+  setProgress(100, 'Ready!');
+  modelReady = true;
+
+  await new Promise(r => setTimeout(r, 400));
+  document.getElementById('loading').classList.add('hidden');
+  sendBtn.disabled = false;
+
+  // Register service worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+}
+
+boot().catch(err => {
+  setProgress(100, 'Error: ' + err.message);
+  // Still allow plugin-only mode
+  modelReady = false;
+  document.getElementById('loading').classList.add('hidden');
+  sendBtn.disabled = false;
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "name": "SLM — Small Language Model",
+  "short_name": "SLM",
+  "description": "A small language model running entirely on your device",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
