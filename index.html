@@ -942,48 +942,239 @@ function dispatch(text) {
 }
 
 // ══════════════════════════════════════════════════════════
+//  NATURAL LANGUAGE UNDERSTANDING — smart response layer
+//  Catches common questions before the neural net runs
+// ══════════════════════════════════════════════════════════
+
+const NLU = [
+  // ── Greetings ──
+  { re: /^\s*(hi|hello|hey|howdy|sup|yo|good\s*(morning|evening|afternoon|day))[!.,\s]*$/i,
+    fn: () => pick([
+      "Hello! I'm SLM — a small language model running entirely on your device. How can I help?",
+      "Hey! What can I do for you today?",
+      "Hi there! Ready to chat. Try typing 'help' to see what I can do.",
+    ])
+  },
+  // ── How are you ──
+  { re: /how are you|how('s| is) it going|you ok|you good|you alright/i,
+    fn: () => pick([
+      "I'm running great — all 1.3 million parameters firing smoothly! What can I help with?",
+      "Doing well, thanks for asking! I'm fully offline and ready to go.",
+      "All systems operational! What's on your mind?",
+    ])
+  },
+  // ── What are you / who are you ──
+  { re: /what are you|who are you|what('s| is) (your name|slm)|tell me about yourself/i,
+    fn: () =>
+      "I'm SLM — a Small Language Model built from scratch in pure JavaScript.\n\n" +
+      "I run entirely on your device with no internet needed. I have:\n" +
+      "• 1,334,016 parameters\n• 4 transformer layers\n• 2048 token vocabulary\n• 128-token context window\n\n" +
+      "Type 'help' to see everything I can do."
+  },
+  // ── What can you do ──
+  { re: /what can you do|what do you do|your (features|abilities|skills|capabilities)|how do you work/i,
+    fn: () =>
+      "Here's what I can do:\n\n" +
+      "📐 Maths — calculate, prime check, fibonacci, random numbers\n" +
+      "🔄 Convert — temperature, distance, weight, height\n" +
+      "🔡 Text — reverse, uppercase, lowercase, word count, palindrome\n" +
+      "📚 Definitions — 25 AI/ML terms\n" +
+      "🕐 Time — current date and time\n" +
+      "😄 Fun — jokes\n\n" +
+      "Type 'help' for the full list with examples."
+  },
+  // ── Thanks ──
+  { re: /^\s*(thanks|thank you|ty|cheers|thx|appreciate it)[!.,\s]*$/i,
+    fn: () => pick([
+      "You're welcome!",
+      "Happy to help!",
+      "Anytime! Is there anything else?",
+    ])
+  },
+  // ── Goodbye ──
+  { re: /^\s*(bye|goodbye|see you|cya|later|good night)[!.,\s]*$/i,
+    fn: () => pick([
+      "Goodbye! Come back anytime — I'll be right here.",
+      "See you later!",
+      "Bye! I'll be here whenever you need me.",
+    ])
+  },
+  // ── What is AI / ML ──
+  { re: /what (is|are) (ai|artificial intelligence)/i,
+    fn: () => "Artificial Intelligence (AI) is the field of building computer systems that can perform tasks that normally require human intelligence — like understanding language, recognising images, making decisions, and learning from experience.\n\nModern AI is mostly powered by machine learning, where models learn patterns from large amounts of data."
+  },
+  { re: /what (is|are) (ml|machine learning)/i,
+    fn: () => "Machine Learning (ML) is a way of teaching computers by showing them examples, rather than writing explicit rules.\n\nInstead of programming 'if this, then that', you feed the system thousands of examples and it figures out the patterns on its own. Neural networks are the most powerful type of ML model today."
+  },
+  { re: /what (is|are) (a )?(neural network|deep learning)/i,
+    fn: () => "A neural network is a system inspired by the human brain. It's made of layers of connected 'neurons' (really just numbers and maths) that transform an input into an output.\n\nDeep learning means using many layers — the depth lets the network learn increasingly complex features. I (SLM) am a small neural network with 4 layers."
+  },
+  { re: /what (is|are) (a )?(llm|large language model)/i,
+    fn: () => "A Large Language Model (LLM) is a neural network trained on massive amounts of text — books, websites, code — to understand and generate human language.\n\nExamples: GPT-4, Claude, Gemini. I'm an SLM — a Small Language Model — a much more compact version running entirely on your device."
+  },
+  { re: /what (is|are) (a )?(transformer)/i,
+    fn: () => "A Transformer is the neural network architecture that powers most modern AI language models.\n\nThe key innovation is 'self-attention' — every word can look at every other word in a sentence to understand context. I use a 4-layer transformer with 4 attention heads."
+  },
+  // ── What is SLM ──
+  { re: /what (is|are) (a )?slm|what does slm (stand for|mean)/i,
+    fn: () => "SLM stands for Small Language Model.\n\nUnlike large models (GPT-4, Claude) that run on powerful servers, SLMs are compact enough to run directly on your phone or PC — no internet required.\n\nThis app is an SLM with 1.3 million parameters, built entirely in JavaScript so it runs inside your browser."
+  },
+  // ── How does it work ──
+  { re: /how (does|do) (this|it|slm|you) work/i,
+    fn: () =>
+      "Here's how I work:\n\n" +
+      "1. You type a message\n" +
+      "2. It's split into tokens (word pieces) by the tokenizer\n" +
+      "3. Each token becomes a vector (list of 128 numbers)\n" +
+      "4. Those vectors pass through 4 transformer layers\n" +
+      "5. Each layer uses self-attention to understand context\n" +
+      "6. The final layer predicts the next most likely token\n" +
+      "7. Repeat until the response is complete\n\n" +
+      "Everything runs locally on your device — no data leaves your phone."
+  },
+  // ── Python / programming ──
+  { re: /what (is|are) python/i,
+    fn: () => "Python is a popular programming language known for being easy to read and write. It's widely used in AI, data science, automation, and web development.\n\nThis SLM was originally built in Python using NumPy, then ported to JavaScript to run on your iPhone."
+  },
+  // ── What is the internet ──
+  { re: /what (is|are) the internet/i,
+    fn: () => "The internet is a global network of computers connected together, allowing them to share information. It powers websites, apps, messaging, email, and streaming.\n\nInterestingly, this app doesn't need it — I run entirely offline once loaded."
+  },
+  // ── Yes / No / Ok ──
+  { re: /^\s*(yes|no|ok|okay|sure|nope|yep|yeah|nah)[!.,\s]*$/i,
+    fn: t => {
+      if (/yes|yep|yeah|ok|okay|sure/i.test(t)) return pick(["Got it!", "Alright, what's next?", "Sure thing!"]);
+      return pick(["No problem!", "Alright.", "Understood."]);
+    }
+  },
+  // ── Compliments ──
+  { re: /you('re| are) (great|amazing|awesome|cool|smart|good|brilliant|helpful)/i,
+    fn: () => pick([
+      "Thanks! I do my best with 1.3 million parameters 😄",
+      "That means a lot — especially for a model running on your phone!",
+      "Thank you! Type 'help' if you want to explore more of what I can do.",
+    ])
+  },
+  // ── What time / date ── (catch natural phrasing)
+  { re: /what('s| is) the (time|date|day)|what (time|day|date) is it/i,
+    fn: () => {
+      const d = new Date();
+      return 'Date : ' + d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) +
+             '\nTime : ' + d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    }
+  },
+  // ── Age / when was I built ──
+  { re: /how old are you|when were you (made|built|created|trained)/i,
+    fn: () => "I was built and trained in March 2026. I'm a custom SLM created from scratch — trained for about 70 seconds on a small corpus of text!"
+  },
+  // ── Can you ... (capability questions) ──
+  { re: /can you (search|browse|google|look up|find)/i,
+    fn: () => "No — I run fully offline with no internet access, so I can't search the web or browse URLs.\n\nWhat I can do is answer questions from my built-in knowledge, run calculations, convert units, and more. Type 'help' to see the full list."
+  },
+  { re: /can you (remember|save|store)/i,
+    fn: () => "I remember everything within our current conversation, but once you start a new chat (✏️ button) the history is cleared.\n\nI don't save anything between sessions — everything stays on your device and is never sent anywhere."
+  },
+  // ── What is ... (general) ──
+  { re: /what (is|are) (a |an )?(gpt|chatgpt)/i,
+    fn: () => "GPT (Generative Pre-trained Transformer) is a family of large language models made by OpenAI. ChatGPT is the chat interface built on top of GPT-4.\n\nI'm inspired by GPT's architecture but am much smaller — designed to run directly on your device without any server."
+  },
+  { re: /what (is|are) (a |an )?iphone/i,
+    fn: () => "iPhone is Apple's smartphone, running iOS. It's the device you're using right now to chat with me!\n\nThis app runs as a Progressive Web App (PWA) in Safari — no App Store needed."
+  },
+  // ── Tell me a fact ──
+  { re: /tell me (a |an )?(fact|something interesting|something cool|random fact)/i,
+    fn: () => pick([
+      "A group of flamingos is called a 'flamboyance'. 🦩",
+      "Honey never spoils — archaeologists found 3000-year-old honey in Egyptian tombs that was still edible.",
+      "There are more possible games of chess than atoms in the observable universe.",
+      "Bananas are berries, but strawberries are not.",
+      "The first computer bug was an actual bug — a moth found in a Harvard Mark II computer in 1947.",
+      "Cleopatra lived closer in time to the Moon landing than to the construction of the Great Pyramid.",
+      "A single bolt of lightning contains enough energy to toast 100,000 slices of bread.",
+      "Octopuses have three hearts and blue blood.",
+    ])
+  },
+  // ── Motivational / encouragement ──
+  { re: /motivat|inspire|encourage|cheer me up/i,
+    fn: () => pick([
+      "Every expert was once a beginner. Keep going — progress compounds.",
+      "The best time to start was yesterday. The second best time is right now.",
+      "Small steps every day lead to big changes over time. You've got this.",
+      "Consistency beats intensity. Show up, do the work, trust the process.",
+    ])
+  },
+];
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function nluMatch(text) {
+  for (const rule of NLU) {
+    if (rule.re.test(text)) return rule.fn(text);
+  }
+  return null;
+}
+
+// ══════════════════════════════════════════════════════════
 //  INFERENCE ENGINE
 // ══════════════════════════════════════════════════════════
 
 let history = [];
 let modelReady = false;
 
-const FALLBACKS = [
-  'Language is the means by which we communicate complex ideas across time.',
-  'Neural networks learn by adjusting weights through gradient descent.',
-  'The scientific method involves observation, hypothesis, and experiment.',
-  'Mathematics is the language of the universe, describing patterns with precision.',
-  'A transformer processes tokens in parallel using multi-head self-attention.',
-  'Intelligence emerges from the interaction of many simple computational units.',
-];
-
 function respond(prompt) {
+  // 1. Plugin dispatch (calculator, time, define, etc.)
   const plugin = dispatch(prompt);
-  if (plugin) return plugin;
-  if (!modelReady) return FALLBACKS[Math.floor(Math.random() * FALLBACKS.length)];
+  if (plugin) {
+    history.push(['user', prompt]);
+    history.push(['assistant', plugin]);
+    return plugin;
+  }
 
-  // Build context
+  // 2. NLU — smart natural language responses
+  const nlu = nluMatch(prompt);
+  if (nlu) {
+    history.push(['user', prompt]);
+    history.push(['assistant', nlu]);
+    return nlu;
+  }
+
+  // 3. Neural net — only for open-ended generation
+  if (!modelReady) {
+    const r = "I'm not sure about that yet — my neural engine is still loading. Try a command like 'help', 'calculate 2+2', or 'define transformer'!";
+    history.push(['user', prompt]); history.push(['assistant', r]);
+    return r;
+  }
+
   let ctx = '';
-  for (const [role, text] of history.slice(-6)) {
+  for (const [role, text] of history.slice(-4)) {
     ctx += (role === 'user' ? 'Human: ' : 'Assistant: ') + text + '\n';
   }
   ctx += `Human: ${prompt}\nAssistant:`;
 
-  const ids = encode(ctx, false).slice(-(CFG.ctx - 20));
-  const temp    = parseFloat(document.getElementById('temp-sl').value);
-  const maxNew  = parseInt(document.getElementById('tok-sl').value);
-  const genIds  = generate(ids, maxNew, temp);
-  const newIds  = genIds.slice(ids.length);
-  let response  = decode(newIds).trim();
+  const ids    = encode(ctx, false).slice(-(CFG.ctx - 20));
+  const temp   = parseFloat(document.getElementById('temp-sl').value);
+  const maxNew = parseInt(document.getElementById('tok-sl').value);
+  const genIds = generate(ids, maxNew, temp);
+  const newIds = genIds.slice(ids.length);
+  let response = decode(newIds).trim();
 
-  // Clean
+  // Clean stop tokens
   for (const stop of ['Human:', 'Assistant:', '<EOS>', '<BOS>']) {
     if (response.includes(stop)) response = response.slice(0, response.indexOf(stop)).trim();
   }
-  if (!response) {
-    response = prompt.match(/\b(hello|hi|hey)\b/i)
-      ? 'Hello! I\'m SLM, running entirely on your device. How can I help?'
-      : FALLBACKS[Math.floor(Math.random() * FALLBACKS.length)];
+
+  // Quality check — if output looks garbled, use a fallback
+  const words  = response.split(/\s+/).filter(Boolean);
+  const unique = new Set(words.map(w => w.toLowerCase()));
+  const avgLen = words.reduce((s,w) => s + w.length, 0) / Math.max(words.length, 1);
+  const isGarbled = words.length < 3 || avgLen > 14 || (unique.size / words.length) < 0.3;
+
+  if (isGarbled || !response) {
+    response = pick([
+      "I understand you're asking about that, but I'm a small model and may not have enough knowledge on that topic yet. Try asking me something more specific, or use one of my built-in commands (type 'help' to see them).",
+      "That's a bit outside my current knowledge. I work best with specific commands — type 'help' to see what I can do reliably.",
+      "My neural side is still learning! For reliable answers, try: calculations, unit conversions, definitions, or type 'help' for the full list.",
+    ]);
   }
 
   history.push(['user', prompt]);
